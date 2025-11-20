@@ -1,0 +1,13 @@
+---
+# tasks file for kubernetes_worker
+- name: Copy join-command file to worker nodes
+  copy:
+    src: /tmp/worker-join-command
+    dest: /tmp/worker-join-command
+    mode: 0755
+
+- name: Join Worker Nodes
+  ansible.builtin.shell: sh /tmp/worker-join-command
+  become: yes
+
+

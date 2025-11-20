@@ -1,0 +1,99 @@
+---
+
+- name: Configure Kubernetes Master
+  hosts: master_nodes
+  become: yes
+  tasks:
+    - name: Check if Master is already installed
+      stat:
+        path: /kubernetes_master_doneflagfile
+      register: flagfile
+
+    - block:
+      - import_role:
+          name: kubernetes_master
+  
+      - import_role:
+          name: helm_install
+  
+      - import_role:
+          name: kubernetes_network
+  
+      - file: 
+          path: /kubernetes_master_doneflagfile
+          state: touch
+      when: not flagfile.stat.exists
+
+- name: Configure Kubernetes all nodes
+  hosts: all_nodes
+  become: yes
+  tasks:
+    - name: Check if Kubernets is already installed
+      stat:
+        path: /kubernetes_all_nodes_doneflagfile
+      register: flagfile
+    - block:
+      - import_role: 
+         name: kubernetes_all_nodes
+      - file: 
+          path: /kubernetes_all_nodes_doneflagfile
+          state: touch
+      when: not flagfile.stat.exists
+    
+
+- name: add multi-master node to cluster
+  hosts: join_master_nodes
+  become: yes
+  tasks:
+    - name: Check if node joined already as master
+      stat:
+        path: /kubernetes_join_master_doneflagfile
+      register: flagfile
+    - block:
+      - import_role: 
+         name: kubernetes_join_master
+      - file: 
+          path: /kubernetes_join_master_doneflagfile
+          state: touch
+      when: not flagfile.stat.exists
+   
+
+- name: add worker node to cluster
+  hosts: join_worker_nodes
+  become: yes
+  tasks:
+    - name: Check if node joined already as worker
+      stat:
+        path: /kubernetes_join_worker_doneflagfile
+      register: flagfile
+    - block:
+      - import_role: 
+         name: kubernetes_join_worker
+      - file: 
+          path: /kubernetes_join_worker_doneflagfile
+          state: touch
+      when: not flagfile.stat.exists
+
+- name: Configure and install argocd,dashboard,monitoring,nfs storageClass,api-six
+  hosts: master_nodes
+  become: yes
+  tasks:
+    - name: Check if argoCD is installed
+      stat:
+        path: /kubernetes_apps_doneflagfile
+      register: flagfile
+    - block:
+      - include_role: 
+          name: '{{item}}'
+        loop: 
+          - kubernetes_argoCD
+          - kubernetes_dashboard
+          - kubernetes_monitoring
+          - k8s-dashboard-user    
+          - kubernetes_nfs-storageClass    
+          - kubernetes_apisix
+      - file: 
+          path: /kubernetes_apps_doneflagfile
+          state: touch
+      when: not flagfile.stat.exists
+

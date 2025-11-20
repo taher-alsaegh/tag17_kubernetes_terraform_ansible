@@ -1,0 +1,8 @@
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+groups:
+  master_nodes: tags.masternode
+  join_master_nodes: tags.join_master_nodes
+  join_worker_nodes: tags.join_worker_nodes
+  all_nodes: tags.k8s

@@ -1,0 +1,53 @@
+---
+    - name: Create Kubernetes manifest file
+      ansible.builtin.copy:
+        dest: "{{ manifest_path }}"
+        content: |
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: admin-user
+            namespace: kube-system
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: admin-user
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: cluster-admin
+          subjects:
+          - kind: ServiceAccount
+            name: admin-user
+            namespace: kube-system
+
+    - name: Apply the Kubernetes manifest
+      ansible.builtin.command:
+        cmd: kubectl apply -f "{{ manifest_path }}"
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: apply_result
+
+    - name: Show the result of kubectl apply
+      ansible.builtin.debug:
+        msg: "{{ apply_result.stdout }}"
+
+    - name: Verify that the ServiceAccount was created
+      ansible.builtin.command:
+        cmd: kubectl get serviceaccount admin-user -n kube-system -o yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: sa_check
+      failed_when: "'not found' in sa_check.stderr"
+      changed_when: false
+
+    - name: Verify that the ClusterRoleBinding was created
+      ansible.builtin.command:
+        cmd: kubectl get clusterrolebinding admin-user -o yaml
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: crb_check
+      failed_when: "'not found' in crb_check.stderr"
+      changed_when: false
+

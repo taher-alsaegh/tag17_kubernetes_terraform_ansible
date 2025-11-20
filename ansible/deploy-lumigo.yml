@@ -1,0 +1,39 @@
+apiVersion: v1
+
+kind: Secret
+
+metadata:
+
+  name: lumigo-credentials
+
+stringData:
+
+  token: t_123456789012345678901 # Example: t_123456789012345678901
+
+---
+
+apiVersion: operator.lumigo.io/v1alpha1
+
+kind: Lumigo
+
+metadata:
+
+  labels:
+
+    app.kubernetes.io/name: lumigo
+
+    app.kubernetes.io/instance: lumigo
+
+    app.kubernetes.io/part-of: lumigo-operator
+
+  name: lumigo
+
+spec:
+
+  lumigoToken:
+
+    secretRef:
+
+      name: lumigo-credentials 
+
+      key: token

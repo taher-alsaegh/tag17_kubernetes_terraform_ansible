@@ -1,0 +1,65 @@
+---
+- name: Create monitoring namespace to monitor 
+  shell: kubectl create namespace monitoring
+  ignore_errors: yes
+
+- name: Add prometheus & ghafana repository
+  shell: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+  ignore_errors: yes 
+
+- name: Add metrics-server repository
+  shell: helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+  ignore_errors: yes
+
+- name: Update repository using Helm
+  shell: helm repo update
+  ignore_errors: yes
+
+- name: Deploy prometheus & ghafana using Helm
+  shell: helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring
+  ignore_errors: yes
+
+- name: Pause for 1 minute to allow prometheus and ghafana to initialize
+  pause:
+    minutes: 1
+
+- name: Deploy metrics-server using Helm
+  shell: helm upgrade --install metrics-server metrics-server/metrics-server --set args[0]="--kubelet-insecure-tls=true" -n kube-system
+  ignore_errors: yes
+
+- name: Get prometheus service
+  shell: kubectl get service monitoring-kube-prometheus-prometheus -n monitoring -o yaml > /tmp/prometheus-svc.yml
+  ignore_errors: yes
+
+- name: Update prometheus-svc file
+  replace:
+    path: /tmp/prometheus-svc.yml
+    regexp: 'ClusterIP'
+    replace: 'NodePort'
+  ignore_errors: yes
+
+- name: Apply the modified prometheus-svc service
+  shell: kubectl apply -f /tmp/prometheus-svc.yml
+  ignore_errors: yes    
+
+- name: Get ghafana service
+  shell: kubectl get service monitoring-grafana -n monitoring  -o yaml > /tmp/ghafana-svc.yml
+  ignore_errors: yes
+
+- name: Update ghafana-svc file
+  replace:
+    path: /tmp/ghafana-svc.yml
+    regexp: 'ClusterIP'
+    replace: 'NodePort'
+  ignore_errors: yes
+
+- name: Apply the modified ghafana-svc service
+  shell: kubectl apply -f /tmp/ghafana-svc.yml
+  ignore_errors: yes
+
+
+- name: ghafana password store at /tmp 
+  shell: kubectl get secret --namespace monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" | base64 --decode  > /tmp/ghafana_password.txt
+  ignore_errors: yes 
+
+

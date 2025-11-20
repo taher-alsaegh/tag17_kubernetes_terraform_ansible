@@ -1,0 +1,22 @@
+---
+- name: Create apisix namespace for apisix 
+  shell: kubectl create namespace apisix
+  ignore_errors: yes
+
+- name: Add apisix repository
+  shell: helm repo add apisix https://charts.apiseven.com
+  ignore_errors: yes 
+
+- name: Update repository using Helm
+  shell: helm repo update
+  ignore_errors: yes
+
+- name: Deploy apisix using Helm
+  shell: helm install apisix apisix/apisix --namespace apisix --set gateway.type=LoadBalancer --set dashboard.enabled=true --set etcd.persistence.storageClass=nfs-client --set ingress-controller.enabled=true --set ingress-controller.config.apisix.serviceNamespace=apisix
+  ignore_errors: yes
+
+- name: Pause for 1 minute to allow prometheus and ghafana to initialize
+  pause:
+    minutes: 1
+
+

@@ -1,0 +1,134 @@
+---
+- name: Completely Destroy Kubernetes Cluster on Ubuntu
+  hosts: all_nodes
+  become: yes
+  tasks:
+    # Step 1: Unhold kubeadm package (if it's held)
+    - name: Unhold kubeadm package
+      command: apt-mark unhold kubeadm
+      ignore_errors: yes  # Continue even if the package is not held
+
+    # Step 2: Unhold kubelet package (if it's held)
+    - name: Unhold kubelet package
+      command: apt-mark unhold kubelet
+      ignore_errors: yes  # Continue even if the package is not held
+
+    # Step 3: Unhold kubectl package (if it's held)
+    - name: Unhold kubectl package
+      command: apt-mark unhold kubectl
+      ignore_errors: yes  # Continue even if the package is not held
+
+    # Step 4: Stop and disable kubelet service
+    - name: Stop kubelet service
+      systemd:
+        name: kubelet
+        state: stopped
+      ignore_errors: yes  # Continue even if the service is already stopped
+
+    - name: Disable kubelet service
+      systemd:
+        name: kubelet
+        enabled: no
+      ignore_errors: yes  # Continue even if the service is already disabled
+
+    # Step 5: Remove Kubernetes packages (kubeadm, kubelet, kubectl)
+    - name: Remove kubeadm
+      package:
+        name: kubeadm
+        state: absent
+      ignore_errors: yes  # Continue even if removal fails
+
+    - name: Remove kubelet
+      package:
+        name: kubelet
+        state: absent
+      ignore_errors: yes  # Continue even if removal fails
+
+    - name: Remove kubectl
+      package:
+        name: kubectl
+        state: absent
+      ignore_errors: yes  # Continue even if removal fails
+
+    # Step 6: Remove Kubernetes networking components (CNI)
+    - name: Remove CNI configurations
+      file:
+        path: /etc/cni/net.d
+        state: absent
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      ignore_errors: yes  # Continue even if no CNI configurations are found
+
+    # Step 7: Reset Kubernetes cluster using kubeadm (only on master node)
+    - name: Reset Kubernetes cluster (using kubeadm)
+      command: kubeadm reset -f
+      when: inventory_hostname == 'kmaster'  # Specify your master node
+      ignore_errors: yes  # Continue even if kubeadm reset fails
+
+    # Step 8: Remove Kubernetes configuration files
+    - name: Remove Kubernetes config files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/kubernetes
+        - /etc/systemd/system/kubelet.service.d
+        - /var/lib/kubelet
+        - /var/lib/etcd
+        - /etc/kubernetes/admin.conf
+        - /etc/kubernetes/pki
+        - /home/{{ ansible_user }}/.kube
+      ignore_errors: yes  # Continue even if some files are not found
+
+    - name: Remove relevent depdencies 
+      file: 
+        path: "{{item}}"
+        state: absent
+      with_items:
+        - /var/lib/docker
+        - /var/lib/kubelet
+        - /var/lib/containerd
+        - /var/lib/etcd
+        - /etc/kubernetes
+        - /root/.kube
+        - /*doneflagfile
+      ignore_errors:  yes       
+
+    # Step 9: Clean Docker containers used by Kubernetes
+    - name: Remove Docker containers
+      command: docker ps -a -q --filter "label=k8s" | xargs docker rm -f
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      ignore_errors: yes  # Continue even if no Docker containers are found
+
+    # Step 10: Remove Docker images related to Kubernetes
+    - name: Remove Docker images
+      command: docker images -q --filter "label=k8s" | xargs docker rmi -f
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      ignore_errors: yes  # Continue even if no Docker images are found
+
+    # Step 11: Flush iptables rules
+    - name: Flush iptables
+      command: iptables -F
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      ignore_errors: yes  # Continue even if iptables flushing fails
+
+    # Step 12: Turn off swap (Kubernetes requires swap to be off)
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      ignore_errors: yes  # Continue even if swap is already off
+
+    - name: Remove swap entry from /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^.*swap.*'
+        state: absent
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      ignore_errors: yes  # Continue even if no swap entry is found
+
+    # Step 13: Reboot the nodes
+    - name: Reboot the nodes
+      reboot:
+        reboot_timeout: 600
+        test_command: whoami
+      ignore_errors: yes  # Continue even if reboot fails
+

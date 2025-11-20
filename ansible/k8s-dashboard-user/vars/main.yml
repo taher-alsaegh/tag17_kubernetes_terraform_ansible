@@ -1,0 +1,2 @@
+manifest_path: "/tmp/admin-user.yaml"
+kubeconfig_path: "/root/.kube/config"

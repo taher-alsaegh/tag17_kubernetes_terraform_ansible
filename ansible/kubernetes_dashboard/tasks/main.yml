@@ -1,0 +1,38 @@
+---
+- name: Create kubernetes-dashboard namespace
+  shell: kubectl create namespace kubernetes-dashboard
+  ignore_errors: yes
+
+- name: Add kubernetes-dashboard repository
+  shell: helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+  ignore_errors: yes
+
+- name: Update repository using Helm
+  shell: helm repo update
+  ignore_errors: yes
+
+- name: Deploy kubernetes-dashboard using Helm
+  shell: helm install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard -n kubernetes-dashboard
+  ignore_errors: yes
+
+- name: Pause for 1 minute to allow kubernetes-dashboard to initialize
+  pause:
+    minutes: 2
+
+- name: Get kubernetes-dashboard-svc service
+  shell: kubectl -n kubernetes-dashboard get service kubernetes-dashboard-kong-proxy -o yaml > /tmp/kubernetes-dashboard-svc.yml
+  ignore_errors: yes
+
+- name: Update kubernetes-dashboard-svc file
+  replace:
+    path: /tmp/kubernetes-dashboard-svc.yml
+    regexp: 'ClusterIP'
+    replace: 'NodePort'
+  ignore_errors: yes
+
+- name: Apply the modified kubernetes-dashboard-svc service
+  shell: kubectl apply -f /tmp/kubernetes-dashboard-svc.yml
+  ignore_errors: yes  
+
+##kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d ; echo
+  

@@ -1,0 +1,45 @@
+---
+    - name: Get the Cilium CLI version from GitHub
+      shell: |
+        curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt
+      register: cilium_cli_version
+      changed_when: false
+
+    - name: Determine CLI architecture
+      set_fact:
+        cli_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+    - name: Download Cilium CLI and checksum files
+      get_url:
+        url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version.stdout }}/cilium-linux-{{ cli_arch }}.tar.gz"
+        dest: "/tmp/cilium-linux-{{ cli_arch }}.tar.gz"
+      register: cilium_download
+
+    - name: Download the checksum file
+      get_url:
+        url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version.stdout }}/cilium-linux-{{ cli_arch }}.tar.gz.sha256sum"
+        dest: "/tmp/cilium-linux-{{ cli_arch }}.tar.gz.sha256sum"
+
+    - name: Verify the SHA256 checksum
+      shell: |
+        cd /tmp && sha256sum --check cilium-linux-{{ cli_arch }}.tar.gz.sha256sum
+      register: checksum_result
+      failed_when: "'OK' not in checksum_result.stdout"
+
+    - name: Extract Cilium CLI to /usr/local/bin
+      unarchive:
+        src: "/tmp/cilium-linux-{{ cli_arch }}.tar.gz"
+        dest: "/usr/local/bin"
+        remote_src: yes
+
+    - name: Cleanup downloaded files
+      file:
+        path: "/tmp/cilium-linux-{{ cli_arch }}.tar.gz{{ item }}"
+        state: absent
+      with_items:
+        - ""
+        - ".sha256sum"
+    
+    - name: Install Cilium
+      ansible.builtin.command:
+        cmd: "cilium install --version {{ cilium_version }}"

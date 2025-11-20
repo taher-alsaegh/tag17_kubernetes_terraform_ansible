@@ -1,0 +1,153 @@
+---
+# tasks file for kubernetes_worker
+- name: Install required packages
+  apt:
+    name:
+      - curl
+      - gnupg2
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - conntrack
+    state: present
+    update_cache: yes
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
+
+- name: Remove Keyrings Directory (if it exists)
+  ansible.builtin.shell: rm -rf /etc/apt/keyrings
+
+- name: Remove Existing Kubernetes Directory (if it exists)
+  ansible.builtin.shell: sudo rm -rf /etc/apt/sources.list.d/pkgs_k8s_io_core_stable_v1_30_deb.list
+
+- name: Disable swap
+  ansible.builtin.command:
+    cmd: swapoff -a
+
+- name: Ensure swap is disabled on boot
+  ansible.builtin.command:
+    cmd: sudo sed -i -e '/\/swap.img\s\+none\s\+swap\s\+sw\s\+0\s\+0/s/^/#/' /etc/fstab
+
+- name: Add kernel modules for Containerd
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/containerd.conf
+    content: |
+      overlay
+      br_netfilter
+
+- name: Load kernel modules for Containerd
+  ansible.builtin.shell:
+    cmd: modprobe overlay && modprobe br_netfilter
+  become: true
+
+- name: Add kernel parameters for Kubernetes
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/kubernetes.conf
+    content: |
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.ipv4.ip_forward = 1
+      net.ipv6.conf.all.forwarding        = 1
+      net.ipv4.tcp_max_syn_backlog        = 2048  ## ## defines controls the maximum number of remembered connection requests and accept a large number of incoming connections
+      net.core.somaxconn                  = 4096  ## defines the maximum number of connections that can be queued for acceptance by a listen socket
+      #net.ipv4.ip_local_port_range        = "10240 65535"  ## determines the range of port numbers that can be used for outbound connections
+      vm.swappiness                       = 10  ## reduce swappiness, setting it to a lower value,can help keep more data in physical memory
+      vm.overcommit_memory                = 1  ## setting this to 1 can sometimes be beneficial, particularly if your workloads have high memory allocation but low utilization. 
+      vm.dirty_background_ratio           = 5    ## I/O-intensive Kubernetes workloads, tuning these parameters can help balance between memory use and disk I/O 
+      vm.dirty_ratio                      = 15   ## I/O-intensive Kubernetes workloads, tuning these parameters can help balance between memory use and disk I/O
+      fs.inotify.max_user_watches         = 524288  ## maximum number of files that can be monitored for changes using inotify
+      kernel.sched_autogroup_enabled      = 0  ## parameter is part of a feature aimed at improving system responsiveness under load by automatically grouping task groups with similar execution patterns
+      vm.transparent_hugepage             = never
+      kernel.threads-max                  = 500000
+      kernel.pid_max                      = 4194303
+      vm.max_map_count                    = 262144
+      net.ipv4.tcp_timestamps             = 0
+      net.core.rmem_max                   = 16777216  ## Increase the maximum buffer sizes for UDP
+      net.core.wmem_max                   = 16777216  ## Increase the maximum buffer sizes for UDP
+      fs.file-max                         = 1000000   ## Increase the maximum nu4096 65536 16777216mber of open file descriptors
+      net.ipv4.tcp_fin_timeout            = 15
+      net.ipv4.tcp_keepalive_time         = 300 
+      #net.ipv4.tcp_rmem                   = "4096 87380 16777216" 
+      #net.ipv4.tcp_wmem                   = "4096 16384 16777216"
+
+
+- name: Load kernel parameter changes
+  ansible.builtin.command:
+    cmd: sudo sysctl --system
+
+- name: Storage Optimizations and Disable CPU frequency scaling
+  ansible.builtin.command:
+    cmd: sudo echo "noop" > /sys/block/sda/queue/scheduler
+
+- name: Ensure /opt/containerd directory exists
+  file:
+    path: /opt/containerd
+    state: directory
+    mode: '0755'    
+
+- name: Configuring Containerd (building the configuration file)
+  ansible.builtin.command:
+    cmd: sudo sh -c "containerd config default > /opt/containerd/config.toml"
+
+- name: Configuring Containerd (Setting SystemdCgroup Variable to True)
+  ansible.builtin.command:
+    cmd: sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /opt/containerd/config.toml
+
+- name: Reload systemd configuration
+  ansible.builtin.command:
+    cmd: systemctl daemon-reload
+
+- name: Restart containerd service
+  ansible.builtin.service:
+    name: containerd
+    state: restarted
+
+
+- name: Prepare keyrings directory and update permissions
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes GPG key securely
+  ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ k8s_version }}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ k8s_version }}/deb/ /"
+    state: present
+
+- name: Install kubeadm, kubelet, kubectl
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    update_cache: yes
+
+- name: Hold kubelet, kubeadm, kubectl packages
+  ansible.builtin.command:
+    cmd: sudo apt-mark hold kubelet kubeadm kubectl
+
+- name: Replace /etc/default/kubelet contents
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: 'KUBELET_EXTRA_ARGS="--cgroup-driver=cgroupfs"'
+
+- name: Reload systemd configuration
+  ansible.builtin.command:
+    cmd: systemctl daemon-reload
+
+- name: Restart kubelet service
+  ansible.builtin.service:
+    name: kubelet
+    state: restarted
+
+
+
+
