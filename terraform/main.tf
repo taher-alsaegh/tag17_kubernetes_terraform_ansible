@@ -75,7 +75,16 @@ resource "aws_security_group" "kubernetes" {
     from_port        = 0
     to_port          = 0
     protocol         = "-1"
-    cidr_blocks      = [var.cidr_block,"81.6.51.120/32"]
+    cidr_blocks      = [var.cidr_block]
+  }
+
+  ingress {
+    description      = "Allow SSH from anywhere"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
   egress {
