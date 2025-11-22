@@ -1,7 +1,7 @@
 ---
 
 - name: Configure Kubernetes Master
-  hosts: master_nodes
+  hosts: tag_master_nodes
   become: yes
   tasks:
     - name: Check if Master is already installed
@@ -25,7 +25,7 @@
       when: not flagfile.stat.exists
 
 - name: Configure Kubernetes all nodes
-  hosts: all_nodes
+  hosts: tag_all_nodes
   become: yes
   tasks:
     - name: Check if Kubernets is already installed
@@ -42,7 +42,7 @@
     
 
 - name: add multi-master node to cluster
-  hosts: join_master_nodes
+  hosts: tag_join_master_nodes
   become: yes
   tasks:
     - name: Check if node joined already as master
@@ -59,7 +59,7 @@
    
 
 - name: add worker node to cluster
-  hosts: join_worker_nodes
+  hosts: tag_join_worker_nodes
   become: yes
   tasks:
     - name: Check if node joined already as worker
@@ -75,7 +75,7 @@
       when: not flagfile.stat.exists
 
 - name: Configure and install argocd,dashboard,monitoring,nfs storageClass,api-six
-  hosts: master_nodes
+  hosts: tag_master_nodes
   become: yes
   tasks:
     - name: Check if argoCD is installed
