@@ -74,7 +74,6 @@
       #net.ipv4.tcp_rmem                   = "4096 87380 16777216" 
       #net.ipv4.tcp_wmem                   = "4096 16384 16777216"
 
-
 - name: Load kernel parameter changes
   ansible.builtin.command:
     cmd: sudo sysctl --system

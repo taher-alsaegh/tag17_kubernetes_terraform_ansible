@@ -82,7 +82,7 @@
 
 - name: Storage Optimizations and Disable CPU frequency scaling
   ansible.builtin.command:
-    cmd: sudo echo "noop" > /sys/block/sda/queue/scheduler 
+    cmd: sudo echo "noop" > /sys/block/sda/queue/scheduler
 
 - name: Ensure /opt/containerd directory exists
   file:
