@@ -12,12 +12,12 @@
     state: present
     update_cache: yes
 
-- name: Install Docker
-  apt:
-    name: docker.io
-    state: present
-    update_cache: yes
-
+#- name: Install Docker
+#  apt:
+#    name: docker.io
+#    state: present
+#    update_cache: yes
+#
 - name: Remove Keyrings Directory (if it exists)
   ansible.builtin.shell: rm -rf /etc/apt/keyrings
 
