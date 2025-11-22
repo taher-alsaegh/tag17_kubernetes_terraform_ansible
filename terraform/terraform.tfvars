@@ -1,3 +1,2 @@
-publickeyfile="../id_rsa.pub"
-join_master_count=0
-join_worker_count=1
+join_master_count=1
+join_worker_count=2
