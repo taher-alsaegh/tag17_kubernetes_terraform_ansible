@@ -1,6 +1,6 @@
 ---
 - name: Completely Destroy Kubernetes Cluster on Ubuntu
-  hosts: all_nodes
+  hosts: tag_k8s
   become: yes
   tasks:
     # Step 1: Unhold kubeadm package (if it's held)
