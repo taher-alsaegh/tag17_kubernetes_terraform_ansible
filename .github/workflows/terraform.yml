@@ -78,5 +78,5 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook ansible/cluster-setup.yml -i ansible/03amazon.aws_ec2.yml -u ubuntu --private-key ./id_rsa
+          ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ansible/cluster-setup.yml -i ansible/03amazon.aws_ec2.yml -u ubuntu --private-key ./id_rsa
 
