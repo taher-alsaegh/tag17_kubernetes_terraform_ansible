@@ -1,0 +1,33 @@
+- name: Store Kubernetes initialization output to file
+  ansible.builtin.fetch:
+    src: /kubeadm_output
+    dest: /tmp/
+    flat: true
+  become: true
+
+- name: Generate the Join Command
+  ansible.builtin.shell: cat /tmp/kubeadm_output | tail -n 2 | sed ':a;N;$!ba;s/\\\n\s*/ /g' > /tmp/worker-join-command
+  become: false
+  delegate_to: localhost
+
+- name: Set permissions for the Join Executable
+  file:
+    path: /tmp/worker-join-command
+    state: file
+    mode: '0755'
+  become: false
+  delegate_to: localhost
+
+
+- name: Generate the Join Command
+  ansible.builtin.shell: cat /tmp/kubeadm_output | sed -n '/kubeadm join/,/--control-plane/p'|head -3 > /tmp/master-join-command
+  become: false
+  delegate_to: localhost
+
+- name: Set permissions for the Join Executable
+  file:
+    path: /tmp/master-join-command
+    state: file
+    mode: '0755'
+  become: false
+  delegate_to: localhost  

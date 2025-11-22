@@ -46,17 +46,10 @@
 
 - name: Initialize Kubernetes control plane
   ansible.builtin.command:
-    cmd: kubeadm init --control-plane-endpoint={{ansible_default_ipv4["address"]}} --pod-network-cidr={{ cni_network }} --upload-certs
-    creates: /tmp/kubeadm_output
-  register: kubeadm_init_output
+    cmd: kubeadm init --control-plane-endpoint={{ansible_default_ipv4["address"]}} --pod-network-cidr={{ cni_network }} --upload-certs > /kubeadm_output
+    creates: /kubeadm_output
   become: true
   changed_when: false 
-
-#- name: Set permissions for Kubernetes Admin
-#  file:
-#    path: /etc/kubernetes/admin.conf
-#    state: file
-#    mode: '0755'
 
 - name: create .kube directoryi and copy kube config file
   shell: "{{ item }}"

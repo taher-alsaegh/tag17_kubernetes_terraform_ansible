@@ -40,6 +40,13 @@
           state: touch
       when: not flagfile.stat.exists
 
+- name: Generate join commands
+  hosts: tag_masternode
+  become: yes
+  tasks:
+    - import_role:
+        name: kubernetes_genjoincommands
+
 - name: add multi-master node to cluster
   hosts: tag_join_master_nodes
   become: yes
