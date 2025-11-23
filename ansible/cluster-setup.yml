@@ -103,6 +103,8 @@
           state: touch
       when: not flagfile.stat.exists
     - import_role:
+         name: kubernetes_remove_nodes
+    - import_role:
          name: kubernetes_summary
       tags: summary
 
