@@ -96,8 +96,8 @@
           - kubernetes_dashboard
           - kubernetes_monitoring
           - k8s-dashboard-user    
-          - kubernetes_nfs-storageClass    
-          - kubernetes_apisix
+#          - kubernetes_nfs-storageClass    
+#          - kubernetes_apisix
       - file: 
           path: /kubernetes_apps_doneflagfile
           state: touch
