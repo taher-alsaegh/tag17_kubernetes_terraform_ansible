@@ -5,27 +5,27 @@
       export KUBECONFIG=/etc/kubernetes/admin.conf
       export ANSIBLE_USER="root"
 
-- name: Replace Docker daemon.json configuration
-  ansible.builtin.copy:
-    dest: /etc/docker/daemon.json
-    content: |
-      {
-        "exec-opts": ["native.cgroupdriver=systemd"],
-        "log-driver": "json-file",
-        "log-opts": {
-          "max-size": "100m"
-        },
-        "storage-driver": "overlay2"
-      }
-
-- name: Reload systemd configuration
-  ansible.builtin.command:
-    cmd: systemctl daemon-reload
-
-- name: Restart Docker service
-  ansible.builtin.service:
-    name: docker
-    state: restarted
+#- name: Replace Docker daemon.json configuration
+#  ansible.builtin.copy:
+#    dest: /etc/docker/daemon.json
+#    content: |
+#      {
+#        "exec-opts": ["native.cgroupdriver=systemd"],
+#        "log-driver": "json-file",
+#        "log-opts": {
+#          "max-size": "100m"
+#        },
+#        "storage-driver": "overlay2"
+#      }
+#
+#- name: Reload systemd configuration
+#  ansible.builtin.command:
+#    cmd: systemctl daemon-reload
+#
+#- name: Restart Docker service
+#  ansible.builtin.service:
+#    name: docker
+#    state: restarted
 
 - name: Update Kubeadm Environment Variable
   ansible.builtin.command:
