@@ -14,3 +14,10 @@ AWS-Credentials to access the AWS-Account:
 - `AWS_ACCESS_KEY_ID`: AWS-Acess-Key in AWS-Learner-Lab
 - `AWS_SECRET_ACCESS_KEY`: AWS-Secret-Acess-Key in AWS-Learner-Lab
 - `AWS_SESSION_TOKEN`: AWS-Session-Token in AWS-Learner-Lab
+
+The following files are used for configuration:
+
+- `ansible/03amazon.aws_ec2.yml`: Set AWS-Region
+- `terraform/backend.conf`: Set AWS-Region, S3-bucket, Dynamo-DB-Table for Terraform-State
+- `terraform/terraform.tfvars`: All variables defined in `terraform/variables.tf`. Required are only `join_master_nodes` and `join_worker_nodes` which are the count of additional masters (if set to 2, we will end up with 3 masters) and worker nodes.
+  
