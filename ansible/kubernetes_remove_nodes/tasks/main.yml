@@ -1,6 +1,6 @@
 
-- name: Get all nodeport information into file /tmp/nodeport.info
+- name: Remove all nodes in state NotReady after waitung 60 seconds
   ansible.builtin.shell:
-    cmd: grep -q NotReady && sleep 60 && grep -q NotReady && for node in $(kubectl get nodes|awk '$2=="NotReady" {print $1}') ; do kubectl drain $node --ignore-daemonsets --delete-emptydir-data; kubectl delete node $node ; done
+    cmd: kubectl get nodes|grep -q NotReady && sleep 60 && kubectl get nodes| grep -q NotReady && for node in $(kubectl get nodes|awk '$2=="NotReady" {print $1}') ; do kubectl drain $node --ignore-daemonsets --delete-emptydir-data; kubectl delete node $node ; done
   become: true
 
