@@ -20,6 +20,8 @@
   hosts: tag_masternode
   become: yes
   tasks:
+    - import_role:
+         name: kubernetes_remove_nodes
     - name: Check if Master is already installed
       stat:
         path: /kubernetes_master_doneflagfile
@@ -102,8 +104,6 @@
           path: /kubernetes_apps_doneflagfile
           state: touch
       when: not flagfile.stat.exists
-    - import_role:
-         name: kubernetes_remove_nodes
     - import_role:
          name: kubernetes_summary
       tags: summary
