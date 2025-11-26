@@ -1,3 +1,3 @@
 join_master_count=2
-join_worker_count=4
+join_worker_count=5
 
